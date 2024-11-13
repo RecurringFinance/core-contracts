@@ -1,0 +1,10 @@
+[profile.default]
+via_ir = true
+src = "src"
+out = "out"
+libs = ["lib"]
+cache = true
+cache_path = "cache"
+auto_detect_solc = true
+
+# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
