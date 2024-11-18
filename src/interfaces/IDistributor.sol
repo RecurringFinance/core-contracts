@@ -19,9 +19,9 @@ interface IDistributor {
 
     event DistributionRevoked(uint256 recurringPaymentId);
 
-    event RecurringPaymentPaused(uint256 indexed recurringPaymentId);
+    event PaymentPaused(uint256 indexed paymentId);
 
-    event RecurringPaymentUnpaused(uint256 indexed recurringPaymentId);
+    event PaymentUnpaused(uint256 indexed paymentId);
 
     event DistributionFeeSet(
         address oldDistributionFeeToken,

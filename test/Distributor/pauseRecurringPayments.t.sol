@@ -83,7 +83,7 @@ contract PauseRecurringPaymentsTest is Test, IDistributor {
         uint256[] memory paymentIds = new uint256[](1);
         paymentIds[0] = paymentId;
 
-        distributor.pauseRecurringPayments(paymentIds);
+        distributor.pausePayments(paymentIds);
 
         (, , , , , , , , uint256 pausedAt, , ) = distributor.getRecurringPayment(paymentId);
         assertEq(pausedAt, block.timestamp);
@@ -100,7 +100,7 @@ contract PauseRecurringPaymentsTest is Test, IDistributor {
         paymentIds[0] = firstPaymentId;
         paymentIds[1] = secondPaymentId;
 
-        distributor.pauseRecurringPayments(paymentIds);
+        distributor.pausePayments(paymentIds);
 
         // Check both payments are paused
         (, , , , , , , , uint256 firstPausedAt, , ) = distributor.getRecurringPayment(firstPaymentId);
@@ -116,7 +116,7 @@ contract PauseRecurringPaymentsTest is Test, IDistributor {
         uint256[] memory paymentIds = new uint256[](1);
         paymentIds[0] = paymentId;
 
-        distributor.pauseRecurringPayments(paymentIds);
+        distributor.pausePayments(paymentIds);
 
         vm.expectRevert("Recurring payment is paused");
         distributor.distribute(paymentId, 10);
@@ -128,10 +128,10 @@ contract PauseRecurringPaymentsTest is Test, IDistributor {
         uint256[] memory paymentIds = new uint256[](1);
         paymentIds[0] = paymentId;
 
-        distributor.pauseRecurringPayments(paymentIds);
+        distributor.pausePayments(paymentIds);
 
         vm.expectRevert("Payment already paused");
-        distributor.pauseRecurringPayments(paymentIds);
+        distributor.pausePayments(paymentIds);
     }
 
     function test_pauseRecurringPayments_unpause_recurring_payment() public {
@@ -140,12 +140,12 @@ contract PauseRecurringPaymentsTest is Test, IDistributor {
         uint256[] memory paymentIds = new uint256[](1);
         paymentIds[0] = paymentId;
 
-        distributor.pauseRecurringPayments(paymentIds);
+        distributor.pausePayments(paymentIds);
 
         // Wait some time
         vm.warp(block.timestamp + 1 days);
 
-        distributor.unpauseRecurringPayments(paymentIds);
+        distributor.unpausePayments(paymentIds);
 
         (, , , , , , , , uint256 pausedAt, uint256 pausedDuration, ) = distributor.getRecurringPayment(paymentId);
         assertEq(pausedAt, 0);
@@ -159,7 +159,7 @@ contract PauseRecurringPaymentsTest is Test, IDistributor {
         paymentIds[0] = paymentId;
 
         vm.expectRevert("Payment not paused");
-        distributor.unpauseRecurringPayments(paymentIds);
+        distributor.unpausePayments(paymentIds);
     }
 
     function test_pauseRecurringPayments_pause_and_unpause_multiple_times() public {
@@ -169,14 +169,14 @@ contract PauseRecurringPaymentsTest is Test, IDistributor {
         paymentIds[0] = paymentId;
 
         // First pause for 1 day
-        distributor.pauseRecurringPayments(paymentIds);
+        distributor.pausePayments(paymentIds);
         vm.warp(block.timestamp + 1 days);
-        distributor.unpauseRecurringPayments(paymentIds);
+        distributor.unpausePayments(paymentIds);
 
         // Second pause for 2 days
-        distributor.pauseRecurringPayments(paymentIds);
+        distributor.pausePayments(paymentIds);
         vm.warp(block.timestamp + 2 days);
-        distributor.unpauseRecurringPayments(paymentIds);
+        distributor.unpausePayments(paymentIds);
 
         (, , , , , , , , uint256 pausedAt, uint256 unPausedAt, ) = distributor.getRecurringPayment(paymentId);
         console2.log("Paused at :", pausedAt);
@@ -200,9 +200,9 @@ contract PauseRecurringPaymentsTest is Test, IDistributor {
         assertEq(periods, 2);
 
         // First pause for 1 day
-        distributor.pauseRecurringPayments(paymentIds);
+        distributor.pausePayments(paymentIds);
         vm.warp(vm.getBlockTimestamp() + 1 days);
-        distributor.unpauseRecurringPayments(paymentIds);
+        distributor.unpausePayments(paymentIds);
 
         (, , , , , , , , , uint256 unPausedAt0, ) = distributor.getRecurringPayment(paymentId);
 
@@ -222,9 +222,9 @@ contract PauseRecurringPaymentsTest is Test, IDistributor {
         assertEq(periods, 0);
 
         // Second pause for 2 days
-        distributor.pauseRecurringPayments(paymentIds);
+        distributor.pausePayments(paymentIds);
         vm.warp(vm.getBlockTimestamp() + 2 days);
-        distributor.unpauseRecurringPayments(paymentIds);
+        distributor.unpausePayments(paymentIds);
 
         (, , , , , , , , uint256 pausedAt, uint256 unPausedAt1, ) = distributor.getRecurringPayment(paymentId);
 
@@ -251,7 +251,7 @@ contract PauseRecurringPaymentsTest is Test, IDistributor {
         //     nonOwner,
         //     distributor.DEFAULT_ADMIN_ROLE()
         // )
-        distributor.pauseRecurringPayments(paymentIds);
+        distributor.pausePayments(paymentIds);
     }
 
     function test_pauseRecurringPayments_only_owner_can_unpause() public {
@@ -260,7 +260,7 @@ contract PauseRecurringPaymentsTest is Test, IDistributor {
         uint256[] memory paymentIds = new uint256[](1);
         paymentIds[0] = paymentId;
 
-        distributor.pauseRecurringPayments(paymentIds);
+        distributor.pausePayments(paymentIds);
 
         address nonOwner = address(0x123);
         vm.prank(nonOwner);
@@ -270,7 +270,7 @@ contract PauseRecurringPaymentsTest is Test, IDistributor {
         //     nonOwner,
         //     distributor.DEFAULT_ADMIN_ROLE()
         // )
-        distributor.unpauseRecurringPayments(paymentIds);
+        distributor.unpausePayments(paymentIds);
     }
 
     function test_pauseRecurringPayments_periods_not_distributed_before_pause_are_lost() public {
@@ -286,9 +286,9 @@ contract PauseRecurringPaymentsTest is Test, IDistributor {
         paymentIds[0] = 0;
 
         // Pause for 3 days
-        distributor.pauseRecurringPayments(paymentIds);
+        distributor.pausePayments(paymentIds);
         vm.warp(block.timestamp + 3 days);
-        distributor.unpauseRecurringPayments(paymentIds);
+        distributor.unpausePayments(paymentIds);
 
         // Move forward 2 more days
         vm.warp(block.timestamp + 2 days);
@@ -312,9 +312,9 @@ contract PauseRecurringPaymentsTest is Test, IDistributor {
         paymentIds[0] = paymentId;
 
         // Pause for 2 days
-        distributor.pauseRecurringPayments(paymentIds);
+        distributor.pausePayments(paymentIds);
         vm.warp(block.timestamp + 2 days);
-        distributor.unpauseRecurringPayments(paymentIds);
+        distributor.unpausePayments(paymentIds);
 
         // Move forward 3 more days
         vm.warp(block.timestamp + 3 days);
