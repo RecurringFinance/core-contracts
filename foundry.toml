@@ -3,9 +3,6 @@ via_ir = true
 src = "src"
 out = "out"
 libs = ["lib"]
-cache = true
-cache_path = "cache"
-auto_detect_solc = true
 
 
 # Configure remappings
