@@ -1,12 +1,15 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 import "../../src/DistributorFactory.sol";
+import "../../src/interfaces/IDistributor.sol";
 import {MockERC20} from "./Distributor.t.sol";
 import {console2} from "forge-std/console2.sol"; // Change this import
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
 
-contract PauseRecurringPaymentsTest is Test {
+contract PauseRecurringPaymentsTest is Test, IDistributor {
     address public owner;
     Distributor public distributor;
     MockERC20 public tokenToDistribute;
@@ -38,8 +41,15 @@ contract PauseRecurringPaymentsTest is Test {
         startTimes[0] = block.timestamp;
         uint256[] memory endTimes = new uint256[](1);
         endTimes[0] = block.timestamp + 30 days;
-        uint256[] memory intervals = new uint256[](1);
-        intervals[0] = 1 days;
+
+        CronLibrary.CronSchedule[] memory intervals = new CronLibrary.CronSchedule[](1);
+        intervals[0] = CronLibrary.CronSchedule({
+            hrs: new uint8[](1),
+            daysOfMonth: new uint8[](0),
+            months: new uint8[](0),
+            daysOfWeek: new uint8[](0)
+        });
+        intervals[0].hrs[0] = 0;
 
         address[][] memory beneficiariesArray = new address[][](1);
         beneficiariesArray[0] = beneficiaries;
@@ -75,7 +85,7 @@ contract PauseRecurringPaymentsTest is Test {
 
         distributor.pauseRecurringPayments(paymentIds);
 
-        (, , , , , , , , , uint256 pausedAt, , ) = distributor.getRecurringPayment(paymentId);
+        (, , , , , , , , uint256 pausedAt, , ) = distributor.getRecurringPayment(paymentId);
         assertEq(pausedAt, block.timestamp);
     }
 
@@ -93,8 +103,8 @@ contract PauseRecurringPaymentsTest is Test {
         distributor.pauseRecurringPayments(paymentIds);
 
         // Check both payments are paused
-        (, , , , , , , , , uint256 firstPausedAt, , ) = distributor.getRecurringPayment(firstPaymentId);
-        (, , , , , , , , , uint256 secondPausedAt, , ) = distributor.getRecurringPayment(secondPaymentId);
+        (, , , , , , , , uint256 firstPausedAt, , ) = distributor.getRecurringPayment(firstPaymentId);
+        (, , , , , , , , uint256 secondPausedAt, , ) = distributor.getRecurringPayment(secondPaymentId);
 
         assertEq(firstPausedAt, block.timestamp);
         assertEq(secondPausedAt, block.timestamp);
@@ -108,8 +118,8 @@ contract PauseRecurringPaymentsTest is Test {
 
         distributor.pauseRecurringPayments(paymentIds);
 
-        vm.expectRevert("No periods have passed since last distribution");
-        distributor.distribute(paymentId);
+        vm.expectRevert("Recurring payment is paused");
+        distributor.distribute(paymentId, 10);
     }
 
     function test_pauseRecurringPayments_cannot_pause_already_paused_payment() public {
@@ -137,9 +147,9 @@ contract PauseRecurringPaymentsTest is Test {
 
         distributor.unpauseRecurringPayments(paymentIds);
 
-        (, , , , , , , , , uint256 pausedAt, uint256 pausedDuration, ) = distributor.getRecurringPayment(paymentId);
+        (, , , , , , , , uint256 pausedAt, uint256 pausedDuration, ) = distributor.getRecurringPayment(paymentId);
         assertEq(pausedAt, 0);
-        assertEq(pausedDuration, 1 days);
+        assertEq(pausedDuration, 1 days + 1 seconds);
     }
 
     function test_pauseRecurringPayments_cannot_unpause_non_paused_payment() public {
@@ -168,10 +178,12 @@ contract PauseRecurringPaymentsTest is Test {
         vm.warp(block.timestamp + 2 days);
         distributor.unpauseRecurringPayments(paymentIds);
 
-        (, , , , , , , , , uint256 pausedAt, uint256 pausedDuration, ) = distributor.getRecurringPayment(paymentId);
+        (, , , , , , , , uint256 pausedAt, uint256 unPausedAt, ) = distributor.getRecurringPayment(paymentId);
+        console2.log("Paused at :", pausedAt);
+        console2.log("Unpaused at :", unPausedAt);
         assertEq(pausedAt, 0);
         // total paused time should be 3 days
-        assertEq(pausedDuration, 3 days);
+        assertEq(unPausedAt, 3 days + 1 seconds);
     }
 
     function test_pauseRecurringPayments_pause_and_unpause_multiple_times_with_distribution() public {
@@ -180,45 +192,49 @@ contract PauseRecurringPaymentsTest is Test {
         uint256[] memory paymentIds = new uint256[](1);
         paymentIds[0] = paymentId;
 
-        // Move forward 1 day, so 1 period has passed
+        // Move forward 1 day, so 2 periods has passed since we start at 0
         vm.warp(vm.getBlockTimestamp() + 1 days);
 
         // 1 period can be distributed
-        assertEq(distributor.periodsToDistribute(paymentId), 1);
+        (uint256 periods, ) = distributor.periodsToDistribute(paymentId, 10);
+        assertEq(periods, 2);
 
         // First pause for 1 day
         distributor.pauseRecurringPayments(paymentIds);
         vm.warp(vm.getBlockTimestamp() + 1 days);
         distributor.unpauseRecurringPayments(paymentIds);
 
-        (, , , , , , , , , , uint256 pausedDuration0, ) = distributor.getRecurringPayment(paymentId);
+        (, , , , , , , , , uint256 unPausedAt0, ) = distributor.getRecurringPayment(paymentId);
 
-        console2.log("Paused duration 0 :", pausedDuration0);
+        console2.log("unPausedAt 0 :", unPausedAt0);
 
-        assertEq(pausedDuration0, 1 days);
+        assertEq(unPausedAt0, 2 days + 1 seconds);
 
         // only 1 period can be distributed
-        assertEq(distributor.periodsToDistribute(paymentId), 1);
+        (periods, ) = distributor.periodsToDistribute(paymentId, 10);
+        assertEq(periods, 1);
 
         // distribute the payment for the first period
-        distributor.distribute(paymentId);
+        distributor.distribute(paymentId, 10);
 
         // no more periods to distribute
-        assertEq(distributor.periodsToDistribute(paymentId), 0);
+        (periods, ) = distributor.periodsToDistribute(paymentId, 10);
+        assertEq(periods, 0);
 
         // Second pause for 2 days
         distributor.pauseRecurringPayments(paymentIds);
         vm.warp(vm.getBlockTimestamp() + 2 days);
         distributor.unpauseRecurringPayments(paymentIds);
 
-        (, , , , , , , , , uint256 pausedAt, uint256 pausedDuration1, ) = distributor.getRecurringPayment(paymentId);
+        (, , , , , , , , uint256 pausedAt, uint256 unPausedAt1, ) = distributor.getRecurringPayment(paymentId);
 
-        console2.log("Paused duration 1 :", pausedDuration1);
+        console2.log("unPausedAt 1 :", unPausedAt1);
         assertEq(pausedAt, 0);
         // total paused time should be 2 days
-        assertEq(pausedDuration1, 2 days);
-        // no more periods to distribute
-        assertEq(distributor.periodsToDistribute(paymentId), 0);
+        assertEq(unPausedAt1, 4 days + 1 seconds);
+        // only 1 period can be distributed
+        (periods, ) = distributor.periodsToDistribute(paymentId, 10);
+        assertEq(periods, 1);
     }
 
     function test_pauseRecurringPayments_only_owner_can_pause() public {
@@ -257,12 +273,14 @@ contract PauseRecurringPaymentsTest is Test {
         distributor.unpauseRecurringPayments(paymentIds);
     }
 
-    function test_pauseRecurringPayments_correct_periods_calculation_with_pause() public {
+    function test_pauseRecurringPayments_periods_not_distributed_before_pause_are_lost() public {
         uint256 paymentId = createBasicRecurringPayment();
         paymentId = 0;
 
         // Move forward 5 days
         vm.warp(block.timestamp + 5 days);
+        (uint256 periodsBP, ) = distributor.periodsToDistribute(paymentId, 100);
+        console2.log("Periods before pause :", periodsBP);
 
         uint256[] memory paymentIds = new uint256[](1);
         paymentIds[0] = 0;
@@ -275,8 +293,36 @@ contract PauseRecurringPaymentsTest is Test {
         // Move forward 2 more days
         vm.warp(block.timestamp + 2 days);
 
-        // Should have 7 periods (5 days before pause + 2 days after pause)
-        uint256 periods = distributor.periodsToDistribute(paymentId);
-        assertEq(periods, 7);
+        // Should have 7 periods (5 days before pause + 2 days after pause - 3 days during pause = 4 periods)
+        (uint256 periods, ) = distributor.periodsToDistribute(paymentId, 100);
+        console2.log("Periods :", periods);
+        assertEq(periods, 3);
+    }
+
+    function test_pauseRecurringPayments_periods_distributed_before_pause_are_preserved() public {
+        uint256 paymentId = createBasicRecurringPayment();
+
+        // Move forward 5 days
+        vm.warp(block.timestamp + 5 days);
+
+        // Distribute 3 periods
+        distributor.distribute(paymentId, 3);
+
+        uint256[] memory paymentIds = new uint256[](1);
+        paymentIds[0] = paymentId;
+
+        // Pause for 2 days
+        distributor.pauseRecurringPayments(paymentIds);
+        vm.warp(block.timestamp + 2 days);
+        distributor.unpauseRecurringPayments(paymentIds);
+
+        // Move forward 3 more days
+        vm.warp(block.timestamp + 3 days);
+
+        (uint256 periods, ) = distributor.periodsToDistribute(paymentId, 10);
+        assertEq(periods, 4);
+
+        // We should be able to distribute these remaining periods
+        distributor.distribute(paymentId, 3);
     }
 }

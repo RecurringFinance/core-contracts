@@ -1,96 +1,143 @@
-## Foundry
+# Recurring Finance
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+A smart contract system for managing automated recurring token payments on EVM chains.
 
-Foundry consists of:
+## Overview
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
--   
+This project implements a dead simple decentralized recurring payment system that allows:
 
-### Start
+- Creation of scheduled token distributions using cron expressions
+- Multiple beneficiaries per payment schedule
+- Pausable and revocable payments
+- Distribution fee mechanisms
+- Token withdrawal functionality
 
-```shell
-$ anvil
-$ ./deploy_local.sh
+### Limitations
+
+- Only supports ERC20 tokens
+- The cron schedule is limited to hours
+
+## Prerequisites
+
+- [Foundry](https://book.getfoundry.sh/getting-started/installation)
+- Rust
+- Git
+
+## Installation
+
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd <repository-name>
 ```
 
-
-### Deploy script to local network
-
-```shell
-$ forge script scripts/deploy_local.s.sol --rpc-url=http://localhost:8545 --broadcast
+2. Install dependencies:
+```bash
+forge install
 ```
 
-## Documentation
-
-https://book.getfoundry.sh/
-
-## Usage
-
-### Install Libs
-
-```shell
-$ forge install 
-$ forge install OpenZeppelin/openzeppelin-contracts
-$ forge install foundry-rs/forge-std
-```
+## Development
 
 ### Build
-
-```shell
-$ forge build
+```bash
+forge build
 ```
 
 ### Test
-
-```shell
-$ forge test
+```bash
+forge test
 ```
 
-### Format
-
-```shell
-$ forge fmt
+### Format Code
+```bash
+forge fmt
 ```
 
-### Gas Snapshots
-
-```shell
-$ forge snapshot
+### Generate Gas Report
+```bash
+forge snapshot
 ```
 
-### Anvil
+## Local Development
 
-```shell
-$ anvil
+1. Start local node:
+```bash
+anvil --block-time 1
 ```
 
-### Deploy
+2. Deploy contracts locally:
 
-```shell
-forge create --rpc-url $ETH_RPC_URL --private-key $PRIVATE_KEY src/TimedWithdrawal.sol:TimedWithdrawal --constructor-args <BENEFICIARY_ADDRESS> <INTERVAL_IN_SECOND> <AMOUNT_IN_WEI>
+Or manually:
+```bash
+forge script scripts/deploy_local.s.sol --rpc-url=http://localhost:8545 --broadcast
 ```
 
-### Cast
+## Deployment
 
-```shell
-$ cast <subcommand>
+To deploy to a network:
+
+```bash
+forge create \
+  --rpc-url $ETH_RPC_URL \
+  --private-key $PRIVATE_KEY \
+  src/Distributor.sol:Distributor \
+  --constructor-args $OWNER_ADDRESS
 ```
 
-### Help
+### Contract Verification
 
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
+```bash
+forge verify-contract \
+  $CONTRACT_ADDRESS \
+  Distributor \
+  --chain $CHAIN_NAME \
+  --constructor-args $(cast abi-encode "constructor(address)" "$OWNER_ADDRESS") \
+  --compiler-version v0.8.18
 ```
 
-```shell
-forge verify-contract <DEPLOYED_CONTRACT_ADDRESS> DistributorFactory --chain arbitrum --constructor-args $(cast abi-encode "constructor(address)" "<DEPLOYER_ADDRESS>") --compiler-version v0.8.27
+Required environment variables:
+- `ETH_RPC_URL`: RPC endpoint
+- `PRIVATE_KEY`: Deployer's private key
+- `ETHERSCAN_API_KEY`: API key for contract verification (use appropriate explorer API key for the target chain)
+
+## Documentation
+
+For detailed contract documentation, see the comments in the Distributor contract:
+
+```1:30:contracts/src/Distributor.sol
+// ▗▄▄▖ ▗▄▄▄▖ ▗▄▄▖▗▖ ▗▖▗▄▄▖ ▗▄▄▖ ▗▄▄▄▖▗▖  ▗▖ ▗▄▄▖
+// ▐▌ ▐▌▐▌   ▐▌   ▐▌ ▐▌▐▌ ▐▌▐▌ ▐▌  █  ▐▛▚▖▐▌▐▌
+// ▐▛▀▚▖▐▛▀▀▘▐▌   ▐▌ ▐▌▐▛▀▚▖▐▛▀▚▖  █  ▐▌ ▝▜▌▐▌▝▜▌
+// ▐▌ ▐▌▐▙▄▄▖▝▚▄▄▖▝▚▄▞▘▐▌ ▐▌▐▌ ▐▌▗▄█▄▖▐▌  ▐▌▝▚▄▞▘
+
+// https://recurring.finance
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.18;
+
+// OpenZeppelin libraries
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
+// Custom libraries
+import "./libraries/DateTimeLibrary.sol";
+
+// Interfaces
+import "./interfaces/IDistributor.sol";
+
+/**
+ * @title Distributor
+ * @notice Manages recurring token payments to multiple beneficiaries with optional rewards
+ * @dev Implements reentrancy protection and ownership controls
+ */
+contract Distributor is ReentrancyGuard, AccessControl, IDistributor {
 ```
 
-you will need to have the following environment variables set:
-ETHERSCAN_API_KEY - your Etherscan API key (replace the value with the one from the chain like arbiscan etc etc)
+
+## License
+
+MIT

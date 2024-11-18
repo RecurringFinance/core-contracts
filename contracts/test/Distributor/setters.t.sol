@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.18;
 
-import {Test} from "forge-std/Test.sol";
+import "forge-std/Test.sol";
 import {Distributor} from "../../src/Distributor.sol";
+import {IDistributor} from "../../src/interfaces/IDistributor.sol";
 import {MockERC20} from "./Distributor.t.sol";
+import {CronLibrary} from "../../src/libraries/CronLibrary.sol";
 
 contract SettersTest is Test {
     Distributor public distributor;
@@ -37,8 +40,13 @@ contract SettersTest is Test {
         uint256[] memory endTimes = new uint256[](1);
         endTimes[0] = block.timestamp + 1 days;
 
-        uint256[] memory periodIntervals = new uint256[](1);
-        periodIntervals[0] = 1 days;
+        CronLibrary.CronSchedule[] memory periodIntervals = new CronLibrary.CronSchedule[](1);
+        periodIntervals[0] = CronLibrary.CronSchedule({
+            hrs: new uint8[](0),
+            daysOfMonth: new uint8[](0),
+            months: new uint8[](0),
+            daysOfWeek: new uint8[](0)
+        });
 
         address[][] memory beneficiariesArray = new address[][](1);
         beneficiariesArray[0] = beneficiaries;

@@ -22,7 +22,7 @@ contract CallerContract {
         Distributor _distributor,
         uint256 _recurringPaymentId
     ) public {
-        _distributor.distribute(_recurringPaymentId);
+        _distributor.distribute(_recurringPaymentId, 100);
     }
 }
 

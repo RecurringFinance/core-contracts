@@ -1,10 +1,14 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 import "../../src/DistributorFactory.sol";
+import "../../src/interfaces/IDistributor.sol";
+import "../../src/libraries/DateTimeLibrary.sol";
 import {MockERC20} from "./Distributor.t.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract RevokeRecurringPaymentTest is Test {
+contract DistributeRecurringPaymentsTest is Test, IDistributor {
     address public owner;
     Distributor public distributor;
     MockERC20 public tokenToDistribute;
@@ -38,8 +42,17 @@ contract RevokeRecurringPaymentTest is Test {
         startTimes[0] = block.timestamp + 1 days;
         uint256[] memory endTimes = new uint256[](1);
         endTimes[0] = block.timestamp + 30 days;
-        uint256[] memory intervals = new uint256[](1);
-        intervals[0] = 1 days;
+
+        CronLibrary.CronSchedule[] memory intervals = new CronLibrary.CronSchedule[](1);
+
+        // every day at 00:00 = 0 * * *
+        intervals[0] = CronLibrary.CronSchedule({
+            hrs: new uint8[](1),
+            daysOfMonth: new uint8[](0),
+            months: new uint8[](0),
+            daysOfWeek: new uint8[](0)
+        });
+        intervals[0].hrs[0] = 0;
 
         address[][] memory beneficiariesArray = new address[][](1);
         beneficiariesArray[0] = beneficiaries;
@@ -71,20 +84,51 @@ contract RevokeRecurringPaymentTest is Test {
         uint256 recurringPaymentId = create_basic_recurring_payment();
 
         vm.expectRevert("Recurring payment period did not start yet");
-        distributor.distribute(recurringPaymentId);
+        distributor.distribute(recurringPaymentId, 10);
     }
 
     function test_distributeRecurringPayments_should_distribute_successfully_after_start_time() public {
         uint256 recurringPaymentId = create_basic_recurring_payment();
 
-        // Move forward 2 days
-        vm.warp(block.timestamp + 2 days);
+        console.log("block.timestamp", block.timestamp);
 
-        distributor.distribute(recurringPaymentId);
+        // Move forward 24 hours
+        vm.warp(block.timestamp + 24 hours);
+        console.log("AFTER warp block.timestamp", block.timestamp);
 
-        (, , , uint256 lastDistributionTime, , , , , , , , ) = distributor.getRecurringPayment(recurringPaymentId);
+        (, uint256 nextDistributionStartTime) = distributor.periodsToDistribute(recurringPaymentId, 10);
+        console.log("nextDistributionStartTime", nextDistributionStartTime);
 
+        assertEq(nextDistributionStartTime + 1 seconds, block.timestamp + 24 hours);
+
+        distributor.distribute(recurringPaymentId, 10);
+
+        (, , , uint256 distributedUpToTime, uint256 lastDistributionTime, , , , , , ) = distributor.getRecurringPayment(
+            recurringPaymentId
+        );
+        console.log("lastDistributionTime", lastDistributionTime);
+        console.log("distributed up to time", distributedUpToTime);
         assertEq(lastDistributionTime, block.timestamp);
+        assertEq(distributedUpToTime + 1 seconds, block.timestamp);
+
+        (uint256 periodsToDistribute1, uint256 nextDistributionStartTime1) = distributor.periodsToDistribute(
+            recurringPaymentId,
+            10
+        );
+        console.log("nextDistributionStartTime1", nextDistributionStartTime1);
+        console.log("periodsToDistribute1", periodsToDistribute1);
+
+        // assertEq(nextDistributionStartTime1 + 1 seconds, block.timestamp + 48 hours);
+        assertEq(periodsToDistribute1, 0);
+
+        vm.warp(block.timestamp + 2 hours);
+
+        (uint256 periodsToDistribute2, uint256 nextDistributionStartTime2) = distributor.periodsToDistribute(
+            recurringPaymentId,
+            10
+        );
+        console.log("nextDistributionStartTime2", nextDistributionStartTime2);
+        console.log("periodsToDistribute2", periodsToDistribute2);
     }
 
     function test_distributeRecurringPayments_should_fail_if_no_period_passed_since_last_distribution() public {
@@ -94,13 +138,13 @@ contract RevokeRecurringPaymentTest is Test {
         vm.warp(block.timestamp + 2 days);
 
         // distribute the first period
-        distributor.distribute(recurringPaymentId);
+        distributor.distribute(recurringPaymentId, 10);
 
         // Move forward 1 hour
         vm.warp(block.timestamp + 1 hours);
 
         vm.expectRevert("No periods have passed since last distribution");
-        distributor.distribute(recurringPaymentId);
+        distributor.distribute(recurringPaymentId, 10);
     }
 
     function test_distributeRecurringPayments_should_work_even_if_end_time_is_in_the_past() public {
@@ -109,11 +153,19 @@ contract RevokeRecurringPaymentTest is Test {
         // Move forward 31 days
         vm.warp(block.timestamp + 31 days);
 
-        distributor.distribute(recurringPaymentId);
+        distributor.distribute(recurringPaymentId, 100);
+        (uint256 periodsToDistribute, uint256 nextDistributionStartTime) = distributor.periodsToDistribute(
+            recurringPaymentId,
+            100
+        );
 
-        (, , , uint256 lastDistributionTime, , , , , , , , ) = distributor.getRecurringPayment(recurringPaymentId);
+        (, , , , uint256 lastDistributionTime, , , , , , ) = distributor.getRecurringPayment(recurringPaymentId);
+        console.log("lastDistributionTime", lastDistributionTime);
+        console.log("nextDistributionStartTime", nextDistributionStartTime);
+        console.log("periodsToDistribute", periodsToDistribute);
+        console.log("block.timestamp", block.timestamp);
 
-        assertEq(lastDistributionTime, block.timestamp);
+        assertEq(nextDistributionStartTime + 1 days + 1 seconds, block.timestamp);
     }
 
     function test_distributeRecurringPayments_should_fail_if_distribution_is_after_end_time() public {
@@ -123,13 +175,13 @@ contract RevokeRecurringPaymentTest is Test {
         vm.warp(block.timestamp + 30 days);
 
         // distribute all the periods
-        distributor.distribute(recurringPaymentId);
+        distributor.distribute(recurringPaymentId, 30);
 
         // Move forward 1 day
         vm.warp(block.timestamp + 1 days);
 
         // no more periods to distribute and payment has ended
         vm.expectRevert("Recurring payment has ended");
-        distributor.distribute(recurringPaymentId);
+        distributor.distribute(recurringPaymentId, 10);
     }
 }

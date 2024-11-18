@@ -1,10 +1,13 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 import "../../src/DistributorFactory.sol";
+import "../../src/interfaces/IDistributor.sol";
 import {MockERC20} from "./Distributor.t.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract RevokeRecurringPaymentTest is Test {
+contract RevokeRecurringPaymentTest is Test, IDistributor {
     address public owner;
     Distributor public distributor;
     MockERC20 public tokenToDistribute;
@@ -38,8 +41,15 @@ contract RevokeRecurringPaymentTest is Test {
         startTimes[0] = block.timestamp + 1 days;
         uint256[] memory endTimes = new uint256[](1);
         endTimes[0] = block.timestamp + 30 days;
-        uint256[] memory intervals = new uint256[](1);
-        intervals[0] = 1 days;
+        // uint256[] memory intervals = new uint256[](1);
+        // intervals[0] = 1 days;
+        CronLibrary.CronSchedule[] memory intervals = new CronLibrary.CronSchedule[](1);
+        intervals[0] = CronLibrary.CronSchedule({
+            hrs: new uint8[](0),
+            daysOfMonth: new uint8[](0),
+            months: new uint8[](0),
+            daysOfWeek: new uint8[](0)
+        });
 
         address[][] memory beneficiariesArray = new address[][](1);
         beneficiariesArray[0] = beneficiaries;
@@ -75,7 +85,7 @@ contract RevokeRecurringPaymentTest is Test {
 
         distributor.revokeRecurringPayments(paymentIds);
 
-        (, , , , , , , , , , , bool revoked) = distributor.getRecurringPayment(paymentId);
+        (, , , , , , , , , , bool revoked) = distributor.getRecurringPayment(0);
 
         assertTrue(revoked, "Recurring payment should be revoked");
     }
@@ -90,8 +100,8 @@ contract RevokeRecurringPaymentTest is Test {
 
         distributor.revokeRecurringPayments(paymentIds);
 
-        (, , , , , , , , , , , bool revokedFirst) = distributor.getRecurringPayment(firstPaymentId);
-        (, , , , , , , , , , , bool revokedSecond) = distributor.getRecurringPayment(secondPaymentId);
+        (, , , , , , , , , , bool revokedFirst) = distributor.getRecurringPayment(firstPaymentId);
+        (, , , , , , , , , , bool revokedSecond) = distributor.getRecurringPayment(secondPaymentId);
 
         assertTrue(revokedFirst, "First recurring payment should be revoked");
         assertTrue(revokedSecond, "Second recurring payment should be revoked");
@@ -139,7 +149,7 @@ contract RevokeRecurringPaymentTest is Test {
 
         distributor.revokeRecurringPayments(paymentIds);
 
-        (, , , , , , , , , , , bool revoked) = distributor.getRecurringPayment(paymentId);
+        (, , , , , , , , , , bool revoked) = distributor.getRecurringPayment(paymentId);
 
         assertTrue(revoked, "Recurring payment should be marked as revoked");
     }
@@ -155,7 +165,7 @@ contract RevokeRecurringPaymentTest is Test {
         vm.warp(block.timestamp + 2 days);
 
         vm.expectRevert("Recurring payment has been revoked");
-        distributor.distribute(paymentId);
+        distributor.distribute(paymentId, 10);
     }
 
     function test_revokeRecurringPayments_updates_multiple_correctly() public {
@@ -168,8 +178,8 @@ contract RevokeRecurringPaymentTest is Test {
 
         distributor.revokeRecurringPayments(paymentIds);
 
-        (, , , , , , , , , , , bool revokedFirst) = distributor.getRecurringPayment(firstPaymentId);
-        (, , , , , , , , , , , bool revokedSecond) = distributor.getRecurringPayment(secondPaymentId);
+        (, , , , , , , , , , bool revokedFirst) = distributor.getRecurringPayment(firstPaymentId);
+        (, , , , , , , , , , bool revokedSecond) = distributor.getRecurringPayment(secondPaymentId);
 
         assertTrue(revokedFirst, "First recurring payment should be revoked");
         assertTrue(revokedSecond, "Second recurring payment should be revoked");
