@@ -20,6 +20,6 @@ docs/
 
 #lib
 
-.gitmodules
+#.gitmodules
 
 .DS_Store
