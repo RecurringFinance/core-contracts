@@ -224,19 +224,20 @@ contract Distributor is ReentrancyGuard, AccessControl, IDistributor {
      * @dev Only callable by contract owner
      * @param _recurringPaymentIds Array of payment IDs to pause
      */
-    function pauseRecurringPayments(uint256[] memory _recurringPaymentIds) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function pausePayments(uint256[] memory _recurringPaymentIds) public onlyRole(DEFAULT_ADMIN_ROLE) {
         for (uint256 i = 0; i < _recurringPaymentIds.length; i++) {
-            _pauseRecurringPayment(_recurringPaymentIds[i]);
+            _pausePayment(_recurringPaymentIds[i]);
         }
     }
 
-    function _pauseRecurringPayment(
+    function _pausePayment(
         uint256 _recurringPaymentId
     ) internal onlyValidRecurringPaymentId(_recurringPaymentId) {
         RecurringPayment storage recurringPayment = recurringPayments[_recurringPaymentId];
+        require(block.timestamp >= recurringPayment.startTime, "Payment has not started yet");
         require(recurringPayment.pausedAt == 0, "Payment already paused");
         recurringPayment.pausedAt = block.timestamp;
-        emit RecurringPaymentPaused(_recurringPaymentId);
+        emit PaymentPaused(_recurringPaymentId);
     }
 
     /**
@@ -244,13 +245,13 @@ contract Distributor is ReentrancyGuard, AccessControl, IDistributor {
      * @dev Only callable by contract owner
      * @param _recurringPaymentIds Array of payment IDs to unpause
      */
-    function unpauseRecurringPayments(uint256[] memory _recurringPaymentIds) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function unpausePayments(uint256[] memory _recurringPaymentIds) public onlyRole(DEFAULT_ADMIN_ROLE) {
         for (uint256 i = 0; i < _recurringPaymentIds.length; i++) {
-            _unpauseRecurringPayment(_recurringPaymentIds[i]);
+            _unpausePayment(_recurringPaymentIds[i]);
         }
     }
 
-    function _unpauseRecurringPayment(
+    function _unpausePayment(
         uint256 _recurringPaymentId
     ) internal onlyValidRecurringPaymentId(_recurringPaymentId) {
         RecurringPayment storage recurringPayment = recurringPayments[_recurringPaymentId];
@@ -259,7 +260,7 @@ contract Distributor is ReentrancyGuard, AccessControl, IDistributor {
         recurringPayment.unPausedAt = block.timestamp;
         recurringPayment.pausedAt = 0;
 
-        emit RecurringPaymentUnpaused(_recurringPaymentId);
+        emit PaymentUnpaused(_recurringPaymentId);
     }
 
     /**
