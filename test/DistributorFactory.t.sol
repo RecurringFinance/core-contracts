@@ -22,7 +22,7 @@ contract DistributorFactoryTest is Test {
 
     function test_create_distributor() public {
         vm.prank(user1); // Set the user1 as the sender
-        address distributorAddress = factory.newDistributor();
+        address distributorAddress = factory.newDistributor(user1);
 
         assertTrue(
             distributorAddress != address(0),
@@ -30,7 +30,7 @@ contract DistributorFactoryTest is Test {
         );
 
         vm.prank(user1); // Set the user1 as the sender
-        address[] memory distributors = factory.getOwnerDistributors();
+        address[] memory distributors = factory.getOwnerDistributors(user1);
         assertEq(distributors.length, 1, "Should have one Distributor");
         assertEq(
             distributors[0],
@@ -42,11 +42,11 @@ contract DistributorFactoryTest is Test {
     function test_create_multiple_distributors() public {
         vm.startPrank(user1);
 
-        address distributor1 = factory.newDistributor();
-        address distributor2 = factory.newDistributor();
-        address distributor3 = factory.newDistributor();
+        address distributor1 = factory.newDistributor(user1);
+        address distributor2 = factory.newDistributor(user1);
+        address distributor3 = factory.newDistributor(user1);
 
-        address[] memory distributors = factory.getOwnerDistributors();
+        address[] memory distributors = factory.getOwnerDistributors(user1);
         assertEq(distributors.length, 3, "Should have three Distributors");
         assertEq(
             distributors[0],
@@ -69,7 +69,7 @@ contract DistributorFactoryTest is Test {
 
     function test_distributor_ownership() public {
         vm.prank(user1);
-        address distributorAddress = factory.newDistributor();
+        address distributorAddress = factory.newDistributor(user1);
 
         Distributor distributor = Distributor(payable(distributorAddress));
 
@@ -82,13 +82,13 @@ contract DistributorFactoryTest is Test {
 
     function test_get_distributors_for_different_users() public {
         vm.prank(user1);
-        factory.newDistributor();
+        factory.newDistributor(user1);
 
         vm.prank(user2);
-        factory.newDistributor();
+        factory.newDistributor(user2);
 
         vm.prank(user1);
-        address[] memory user1Distributors = factory.getOwnerDistributors();
+        address[] memory user1Distributors = factory.getOwnerDistributors(user1);
         assertEq(
             user1Distributors.length,
             1,
@@ -96,7 +96,7 @@ contract DistributorFactoryTest is Test {
         );
 
         vm.prank(user2);
-        address[] memory user2Distributors = factory.getOwnerDistributors();
+        address[] memory user2Distributors = factory.getOwnerDistributors(user2);
         assertEq(
             user2Distributors.length,
             1,
@@ -111,10 +111,10 @@ contract DistributorFactoryTest is Test {
 
     function test_get_all_distributors() public {
         vm.prank(user1);
-        address distributor1 = factory.newDistributor();
+        address distributor1 = factory.newDistributor(user1);
 
         vm.prank(user2);
-        address distributor2 = factory.newDistributor();
+        address distributor2 = factory.newDistributor(user2);
 
         address[] memory allDistributors = factory.getAllDistributors();
         assertEq(
