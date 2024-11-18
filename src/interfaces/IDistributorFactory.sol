@@ -8,10 +8,10 @@ interface IDistributorFactory {
      */
     event NewDistributorEvent(address distributorAddress, address owner);
 
-    function newDistributor() external returns (address);
+    function newDistributor(address _owner) external returns (address);
 
     function getAllDistributors() external view returns (address[] memory);
 
-    function getOwnerDistributors() external view returns (address[] memory);
+    function getOwnerDistributors(address _owner) external view returns (address[] memory);
 
 }

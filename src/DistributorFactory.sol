@@ -10,6 +10,8 @@ import "./Distributor.sol";
 import "./interfaces/IDistributorFactory.sol";
 
 contract DistributorFactory is IDistributorFactory {
+
+    
     mapping(address => address[]) public ownerToDistributors;
     address[] public allDistributors;
 
@@ -17,22 +19,24 @@ contract DistributorFactory is IDistributorFactory {
 
     /**
      * @notice Creates a new Distributor contract and assigns ownership to the caller.
+     * @param _owner The address to assign ownership to.
      * @return The address of the newly created Distributor contract.
      */
-    function newDistributor() public returns (address) {
-        Distributor distributor = new Distributor(msg.sender);
-        ownerToDistributors[msg.sender].push(address(distributor));
+    function newDistributor(address _owner) public returns (address) {
+        Distributor distributor = new Distributor(_owner);
+        ownerToDistributors[_owner].push(address(distributor));
         allDistributors.push(address(distributor));
-        emit NewDistributorEvent(address(distributor), msg.sender);
+        emit NewDistributorEvent(address(distributor), _owner);
         return address(distributor);
     }
 
     /**
      * @notice Returns the Distributor contracts owned by the caller.
+     * @param _owner The address to get the Distributor contracts for.
      * @return An array of Distributor contract addresses owned by the caller.
      */
-    function getOwnerDistributors() public view returns (address[] memory) {
-        return ownerToDistributors[msg.sender];
+    function getOwnerDistributors(address _owner) public view returns (address[] memory) {
+        return ownerToDistributors[_owner];
     }
 
     /**
