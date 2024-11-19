@@ -23,10 +23,7 @@ interface IDistributor {
 
     event PaymentUnpaused(uint256 indexed paymentId);
 
-    event DistributionFeeSet(
-        address oldDistributionFeeToken,
-        uint256 oldDistributionFeeAmount,
-        address newDistributionFeeToken,
-        uint256 newDistributionFeeAmount
-    );
+    event EndTimeSet(uint256 recurringPaymentId, uint256 newEndTime);
+
+
 }

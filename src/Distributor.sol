@@ -519,30 +519,41 @@ contract Distributor is ReentrancyGuard, AccessControl, IDistributor {
     }
 
     // Setters
-    /**
-     * @notice Updates the distribution fee configuration for a recurring payment
-     * @dev Only callable by contract owner and when payment is not revoked
-     * @param _recurringPaymentId The ID of the recurring payment to update
-     * @param _distributionFeeToken The new distribution fee token address
-     * @param _distributionFeeAmount The new distribution fee amount
-     */
-    function setDistributionFee(
-        uint256 _recurringPaymentId,
-        address _distributionFeeToken,
-        uint256 _distributionFeeAmount
-    ) public onlyRole(DEFAULT_ADMIN_ROLE) onlyValidRecurringPaymentId(_recurringPaymentId) {
+    // /**
+    //  * @notice Updates the distribution fee configuration for a recurring payment
+    //  * @dev Only callable by contract owner and when payment is not revoked
+    //  * @param _recurringPaymentId The ID of the recurring payment to update
+    //  * @param _distributionFeeToken The new distribution fee token address
+    //  * @param _distributionFeeAmount The new distribution fee amount
+    //  */
+    // function setDistributionFee(
+    //     uint256 _recurringPaymentId,
+    //     address _distributionFeeToken,
+    //     uint256 _distributionFeeAmount
+    // ) public onlyRole(DEFAULT_ADMIN_ROLE) onlyValidRecurringPaymentId(_recurringPaymentId) {
+    //     RecurringPayment storage recurringPayment = recurringPayments[_recurringPaymentId];
+    //     require(!recurringPayment.revoked, "Recurring payment is revoked");
+
+    //     emit DistributionFeeSet(
+    //         recurringPayment.distributionFeeToken,
+    //         recurringPayment.distributionFeeAmount,
+    //         _distributionFeeToken,
+    //         _distributionFeeAmount
+    //     );
+
+    //     recurringPayment.distributionFeeToken = _distributionFeeToken;
+    //     recurringPayment.distributionFeeAmount = _distributionFeeAmount;
+    // }
+
+    function setEndTime(uint256 _recurringPaymentId, uint256 _newEndTime) public onlyRole(DEFAULT_ADMIN_ROLE) onlyValidRecurringPaymentId(_recurringPaymentId) {
         RecurringPayment storage recurringPayment = recurringPayments[_recurringPaymentId];
-        require(!recurringPayment.revoked, "Recurring payment is revoked");
-
-        emit DistributionFeeSet(
-            recurringPayment.distributionFeeToken,
-            recurringPayment.distributionFeeAmount,
-            _distributionFeeToken,
-            _distributionFeeAmount
+        require(
+            recurringPayment.endTime == 0 || recurringPayment.endTime > block.timestamp,
+            "Current end time has already passed"
         );
-
-        recurringPayment.distributionFeeToken = _distributionFeeToken;
-        recurringPayment.distributionFeeAmount = _distributionFeeAmount;
+        require(_newEndTime > block.timestamp, "New end time must be in the future");
+        recurringPayment.endTime = _newEndTime;
+        emit EndTimeSet(_recurringPaymentId, _newEndTime);
     }
 
     // Fallbacks that prevent ETH deposits

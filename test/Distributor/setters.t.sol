@@ -72,15 +72,35 @@ contract SettersTest is Test {
         );
     }
 
-    function test_setReward() public {
-        address newRewardToken = address(0x5);
-        uint256 newRewardAmount = 500;
+    function test_setEndTime() public {
+        uint256 newEndTime = block.timestamp + 7 days;
+        
+        distributor.setEndTime(0, newEndTime);
 
-        distributor.setDistributionFee(0, newRewardToken, newRewardAmount);
+        (, uint256 endTime, , , , , , , , , ) = distributor.getRecurringPayment(0);
+        
+        assertEq(endTime, newEndTime);
+    }
 
-        (address updatedRewardToken, uint256 updatedRewardAmount) = distributor.getDistributionFee(0);
+    function test_setEndTime_RevertIfNotOwner() public {
+        uint256 newEndTime = block.timestamp + 7 days;
+        
+        vm.prank(address(0xdead));
+        vm.expectRevert();
+        distributor.setEndTime(0, newEndTime);
+    }
 
-        assertEq(updatedRewardToken, newRewardToken);
-        assertEq(updatedRewardAmount, newRewardAmount);
+    function test_setEndTime_RevertIfBeforeCurrentTime() public {
+        uint256 newEndTime = block.timestamp - 1;
+        
+        vm.expectRevert("New end time must be in the future");
+        distributor.setEndTime(0, newEndTime);
+    }
+
+    function test_setEndTime_RevertIfInvalidDistributionId() public {
+        uint256 newEndTime = block.timestamp + 7 days;
+        
+        vm.expectRevert("Invalid recurring payment id");
+        distributor.setEndTime(999, newEndTime);
     }
 }
