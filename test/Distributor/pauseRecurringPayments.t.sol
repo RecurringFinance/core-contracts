@@ -9,7 +9,7 @@ import {console2} from "forge-std/console2.sol"; // Change this import
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
 
-contract PauseRecurringPaymentsTest is Test, IDistributor {
+contract PauseRecurringPaymentsTest is Test {
     address public owner;
     Distributor public distributor;
     MockERC20 public tokenToDistribute;

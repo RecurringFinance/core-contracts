@@ -8,7 +8,7 @@ import "../../src/libraries/DateTimeLibrary.sol";
 import {MockERC20} from "./Distributor.t.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract DistributeRecurringPaymentsTest is Test, IDistributor {
+contract DistributeRecurringPaymentsTest is Test {
     address public owner;
     Distributor public distributor;
     MockERC20 public tokenToDistribute;

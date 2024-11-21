@@ -25,7 +25,7 @@ import "./interfaces/IDistributor.sol";
 /**
  * @title Distributor
  * @notice Manages recurring token payments to multiple beneficiaries with optional rewards
- * @dev Implements reentrancy protection and ownership controls
+ * @dev Implements reentrancy protection and access controls roles
  */
 contract Distributor is ReentrancyGuard, AccessControl, IDistributor {
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -71,8 +71,8 @@ contract Distributor is ReentrancyGuard, AccessControl, IDistributor {
      * @param _startTimes Array of start timestamps for each payment
      * @param _endTimes Array of end timestamps (0 for no end)
      * @param _cronSchedules Array of cron schedules
-     * @param _beneficiaries Array of beneficiary address arrays
-     * @param _beneficiariesAmounts Array of payment amount arrays
+     * @param _beneficiaries Array of beneficiaries addresses arrays
+     * @param _beneficiariesAmounts Array of payments amounts arrays
      * @param _tokensToDistribute Array of token addresses to distribute
      * @param _distributionFeeTokens Array of distribution fee token addresses
      * @param _distributionFeeAmounts Array of distribution fee amounts
@@ -89,7 +89,7 @@ contract Distributor is ReentrancyGuard, AccessControl, IDistributor {
     ) public onlyRole(DEFAULT_ADMIN_ROLE) {
         require(_startTimes.length > 0, "There must be a start date");
         require(
-            _startTimes.length == _endTimes.length &&
+                _startTimes.length == _endTimes.length &&
                 _startTimes.length == _cronSchedules.length &&
                 _startTimes.length == _beneficiaries.length &&
                 _startTimes.length == _beneficiariesAmounts.length &&
@@ -125,7 +125,6 @@ contract Distributor is ReentrancyGuard, AccessControl, IDistributor {
 
     /**
      * @notice Creates a recurring payment
-     * @dev Includes reentrancy protection
      * @param _startTime The start time of the recurring payment
      * @param _endTime The end time of the recurring payment
      * @param _cronSchedule The cron schedule of the recurring payment
@@ -186,6 +185,7 @@ contract Distributor is ReentrancyGuard, AccessControl, IDistributor {
      * @notice Distributes tokens to beneficiaries for all eligible periods
      * @dev Includes reentrancy protection
      * @param _recurringPaymentId The ID of the recurring payment to distribute
+     * @param _maxPeriods The maximum number of periods to distribute
      */
     function distribute(
         uint256 _recurringPaymentId,
@@ -210,10 +210,12 @@ contract Distributor is ReentrancyGuard, AccessControl, IDistributor {
         }
 
         if (recurringPayment.distributionFeeToken != address(0)) {
-            IERC20(recurringPayment.distributionFeeToken).safeTransfer(
-                msg.sender,
-                recurringPayment.distributionFeeAmount
-            );
+            uint256 feeBalance = IERC20(recurringPayment.distributionFeeToken).balanceOf(address(this));
+            uint256 feeToSend = Math.min(feeBalance, recurringPayment.distributionFeeAmount);
+            
+            if (feeToSend > 0) {
+                IERC20(recurringPayment.distributionFeeToken).safeTransfer(msg.sender, feeToSend);
+            }
         }
 
         emit Distribution(_recurringPaymentId, periods, block.timestamp);
@@ -230,6 +232,10 @@ contract Distributor is ReentrancyGuard, AccessControl, IDistributor {
         }
     }
 
+    /**
+     * @notice Internal function to pause a recurring payment
+     * @param _recurringPaymentId The ID of the recurring payment to pause
+     */
     function _pausePayment(
         uint256 _recurringPaymentId
     ) internal onlyValidRecurringPaymentId(_recurringPaymentId) {
@@ -251,6 +257,10 @@ contract Distributor is ReentrancyGuard, AccessControl, IDistributor {
         }
     }
 
+    /**
+     * @notice Internal function to unpause a recurring payment
+     * @param _recurringPaymentId The ID of the recurring payment to unpause
+     */
     function _unpausePayment(
         uint256 _recurringPaymentId
     ) internal onlyValidRecurringPaymentId(_recurringPaymentId) {
@@ -274,6 +284,10 @@ contract Distributor is ReentrancyGuard, AccessControl, IDistributor {
         }
     }
 
+    /**
+     * @notice Internal function to revoke a recurring payment
+     * @param _recurringPaymentId The ID of the recurring payment to revoke
+     */
     function _revokeRecurringPayment(
         uint256 _recurringPaymentId
     ) internal onlyValidRecurringPaymentId(_recurringPaymentId) {
@@ -308,7 +322,6 @@ contract Distributor is ReentrancyGuard, AccessControl, IDistributor {
         if (periods == 0) {
             // if the payment has an end time and no periods to distribute,
             // check if the end time has passed
-            // only here for better error message
             require(
                 recurringPayment.endTime == 0 || block.timestamp <= recurringPayment.endTime,
                 "Recurring payment has ended"
@@ -406,7 +419,7 @@ contract Distributor is ReentrancyGuard, AccessControl, IDistributor {
 
     /**
      * @notice Allows owner to withdraw tokens from the contract
-     * @dev Supports both ERC20 tokens and native currency
+     * @dev Supports both ERC20 tokens and native currency (contract does not accepts native currency deposits but support added just in case)
      * @param _token The token address (0 address for native currency)
      * @param _amount Amount to withdraw
      * @param _beneficiary Address to receive the withdrawal
@@ -453,6 +466,7 @@ contract Distributor is ReentrancyGuard, AccessControl, IDistributor {
      * @return uint256 The end time
      * @return CronSchedule The cron schedule
      * @return uint256 The distributed up to time
+     * @return uint256 The last distribution time
      * @return address The token to distribute
      * @return address[] The beneficiaries
      * @return uint256[] The beneficiaries amounts
@@ -475,9 +489,9 @@ contract Distributor is ReentrancyGuard, AccessControl, IDistributor {
             address, // 5: tokenToDistribute
             address[] memory, // 6: beneficiaries
             uint256[] memory, // 7: beneficiariesAmounts
-            uint256, // 10: pausedAt
-            uint256, // 11: unPausedAt
-            bool // 12: revoked
+            uint256, // 8: pausedAt
+            uint256, // 9: unPausedAt
+            bool // 10: revoked
         )
     {
         RecurringPayment storage recurringPayment = recurringPayments[_recurringPaymentId];
@@ -519,32 +533,13 @@ contract Distributor is ReentrancyGuard, AccessControl, IDistributor {
     }
 
     // Setters
-    // /**
-    //  * @notice Updates the distribution fee configuration for a recurring payment
-    //  * @dev Only callable by contract owner and when payment is not revoked
-    //  * @param _recurringPaymentId The ID of the recurring payment to update
-    //  * @param _distributionFeeToken The new distribution fee token address
-    //  * @param _distributionFeeAmount The new distribution fee amount
-    //  */
-    // function setDistributionFee(
-    //     uint256 _recurringPaymentId,
-    //     address _distributionFeeToken,
-    //     uint256 _distributionFeeAmount
-    // ) public onlyRole(DEFAULT_ADMIN_ROLE) onlyValidRecurringPaymentId(_recurringPaymentId) {
-    //     RecurringPayment storage recurringPayment = recurringPayments[_recurringPaymentId];
-    //     require(!recurringPayment.revoked, "Recurring payment is revoked");
 
-    //     emit DistributionFeeSet(
-    //         recurringPayment.distributionFeeToken,
-    //         recurringPayment.distributionFeeAmount,
-    //         _distributionFeeToken,
-    //         _distributionFeeAmount
-    //     );
-
-    //     recurringPayment.distributionFeeToken = _distributionFeeToken;
-    //     recurringPayment.distributionFeeAmount = _distributionFeeAmount;
-    // }
-
+    /**
+     * @notice Updates the end time of a recurring payment
+     * @dev Only callable by contract owner
+     * @param _recurringPaymentId The ID of the recurring payment
+     * @param _newEndTime The new end time
+     */
     function setEndTime(uint256 _recurringPaymentId, uint256 _newEndTime) public onlyRole(DEFAULT_ADMIN_ROLE) onlyValidRecurringPaymentId(_recurringPaymentId) {
         RecurringPayment storage recurringPayment = recurringPayments[_recurringPaymentId];
         require(

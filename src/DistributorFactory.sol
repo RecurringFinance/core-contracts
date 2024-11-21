@@ -9,10 +9,16 @@ pragma solidity ^0.8.18;
 import "./Distributor.sol";
 import "./interfaces/IDistributorFactory.sol";
 
+
+/**
+ * @title DistributorFactory
+ * @notice Manages creation and retrieval of Distributor contracts
+ */
 contract DistributorFactory is IDistributorFactory {
 
-    
+    // Mapping to store Distributor contracts by owner
     mapping(address => address[]) public ownerToDistributors;
+    // Array to store all Distributor contracts
     address[] public allDistributors;
 
     constructor() {}

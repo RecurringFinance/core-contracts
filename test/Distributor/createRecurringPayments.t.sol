@@ -6,7 +6,7 @@ import "../../src/DistributorFactory.sol";
 import "../../src/interfaces/IDistributor.sol";
 import {MockERC20} from "./Distributor.t.sol";
 
-contract DistributorTest is Test, IDistributor {
+contract DistributorTest is Test {
     address public owner;
     Distributor public distributor;
     MockERC20 public tokenToDistribute;

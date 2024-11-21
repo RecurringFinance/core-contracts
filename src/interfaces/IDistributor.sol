@@ -5,6 +5,7 @@ import {CronLibrary} from "../libraries/CronLibrary.sol";
 
 interface IDistributor {
 
+    // Events 
     event NewRecurringPayment(
         uint256 recurringPaymentId,
         uint256 startTime,
@@ -25,5 +26,58 @@ interface IDistributor {
 
     event EndTimeSet(uint256 recurringPaymentId, uint256 newEndTime);
 
+    // Functions
+    function createRecurringPayments(
+        uint256[] memory _startTimes,
+        uint256[] memory _endTimes,
+        CronLibrary.CronSchedule[] memory _cronSchedules,
+        address[][] memory _beneficiaries,
+        uint256[][] memory _beneficiariesAmounts,
+        address[] memory _tokensToDistribute,
+        address[] memory _distributionFeeTokens,
+        uint256[] memory _distributionFeeAmounts
+    ) external;
 
+    function distribute(uint256 _recurringPaymentId, uint256 _maxPeriods) external;
+
+    function pausePayments(uint256[] memory _recurringPaymentIds) external;
+
+    function unpausePayments(uint256[] memory _recurringPaymentIds) external;
+
+    function revokeRecurringPayments(uint256[] memory _recurringPaymentIds) external;
+
+    function canDistribute(uint256 _recurringPaymentId) external view returns (bool);
+
+    function periodsToDistribute(uint256 _recurringPaymentId, uint256 _maxPeriodsToDistribute)
+        external
+        view
+        returns (uint256, uint256);
+
+    function withdrawFunds(address _token, uint256 _amount, address _beneficiary) external;
+
+    function getRecurringPayment(uint256 _recurringPaymentId)
+        external
+        view
+        returns (
+            uint256,
+            uint256,
+            CronLibrary.CronSchedule memory,
+            uint256,
+            uint256,
+            address,
+            address[] memory,
+            uint256[] memory,
+            uint256,
+            uint256,
+            bool
+        );
+
+    function getDistributionFee(uint256 _recurringPaymentId)
+        external
+        view
+        returns (address, uint256);
+
+    function setEndTime(uint256 _recurringPaymentId, uint256 _newEndTime) external;
+
+    function recurringPaymentCounter() external view returns (uint256);
 }
