@@ -89,7 +89,7 @@ contract Distributor is ReentrancyGuard, AccessControl, IDistributor {
     ) public onlyRole(DEFAULT_ADMIN_ROLE) {
         require(_startTimes.length > 0, "There must be a start date");
         require(
-                _startTimes.length == _endTimes.length &&
+            _startTimes.length == _endTimes.length &&
                 _startTimes.length == _cronSchedules.length &&
                 _startTimes.length == _beneficiaries.length &&
                 _startTimes.length == _beneficiariesAmounts.length &&
@@ -212,7 +212,7 @@ contract Distributor is ReentrancyGuard, AccessControl, IDistributor {
         if (recurringPayment.distributionFeeToken != address(0)) {
             uint256 feeBalance = IERC20(recurringPayment.distributionFeeToken).balanceOf(address(this));
             uint256 feeToSend = Math.min(feeBalance, recurringPayment.distributionFeeAmount);
-            
+
             if (feeToSend > 0) {
                 IERC20(recurringPayment.distributionFeeToken).safeTransfer(msg.sender, feeToSend);
             }
@@ -236,9 +236,7 @@ contract Distributor is ReentrancyGuard, AccessControl, IDistributor {
      * @notice Internal function to pause a recurring payment
      * @param _recurringPaymentId The ID of the recurring payment to pause
      */
-    function _pausePayment(
-        uint256 _recurringPaymentId
-    ) internal onlyValidRecurringPaymentId(_recurringPaymentId) {
+    function _pausePayment(uint256 _recurringPaymentId) internal onlyValidRecurringPaymentId(_recurringPaymentId) {
         RecurringPayment storage recurringPayment = recurringPayments[_recurringPaymentId];
         require(block.timestamp >= recurringPayment.startTime, "Payment has not started yet");
         require(recurringPayment.pausedAt == 0, "Payment already paused");
@@ -261,9 +259,7 @@ contract Distributor is ReentrancyGuard, AccessControl, IDistributor {
      * @notice Internal function to unpause a recurring payment
      * @param _recurringPaymentId The ID of the recurring payment to unpause
      */
-    function _unpausePayment(
-        uint256 _recurringPaymentId
-    ) internal onlyValidRecurringPaymentId(_recurringPaymentId) {
+    function _unpausePayment(uint256 _recurringPaymentId) internal onlyValidRecurringPaymentId(_recurringPaymentId) {
         RecurringPayment storage recurringPayment = recurringPayments[_recurringPaymentId];
         require(recurringPayment.pausedAt != 0, "Payment not paused");
 
@@ -540,7 +536,10 @@ contract Distributor is ReentrancyGuard, AccessControl, IDistributor {
      * @param _recurringPaymentId The ID of the recurring payment
      * @param _newEndTime The new end time
      */
-    function setEndTime(uint256 _recurringPaymentId, uint256 _newEndTime) public onlyRole(DEFAULT_ADMIN_ROLE) onlyValidRecurringPaymentId(_recurringPaymentId) {
+    function setEndTime(
+        uint256 _recurringPaymentId,
+        uint256 _newEndTime
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) onlyValidRecurringPaymentId(_recurringPaymentId) {
         RecurringPayment storage recurringPayment = recurringPayments[_recurringPaymentId];
         require(
             recurringPayment.endTime == 0 || recurringPayment.endTime > block.timestamp,

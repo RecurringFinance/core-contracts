@@ -18,11 +18,11 @@ contract DistributorAccessControlTest is Test {
         admin2 = makeAddr("admin2");
         admin3 = makeAddr("admin3");
         nonAdmin = makeAddr("nonAdmin");
-        
+
         distributor = new Distributor(owner);
     }
 
-    function test_accessControl_initial_admin_role() public view {
+    function test_accessControl_initial_admin_role() public {
         assertTrue(distributor.hasRole(DEFAULT_ADMIN_ROLE, owner));
         assertFalse(distributor.hasRole(DEFAULT_ADMIN_ROLE, nonAdmin));
     }
@@ -30,7 +30,7 @@ contract DistributorAccessControlTest is Test {
     function test_accessControl_grant_admin_role() public {
         distributor.grantRole(DEFAULT_ADMIN_ROLE, admin2);
         assertTrue(distributor.hasRole(DEFAULT_ADMIN_ROLE, admin2));
-        
+
         // Admin2 should now be able to grant admin role to admin3
         vm.prank(admin2);
         distributor.grantRole(DEFAULT_ADMIN_ROLE, admin3);
@@ -54,19 +54,19 @@ contract DistributorAccessControlTest is Test {
     function test_accessControl_multiple_admins_can_manage_roles() public {
         // Owner grants admin to admin2
         distributor.grantRole(DEFAULT_ADMIN_ROLE, admin2);
-        
+
         // Admin2 grants admin to admin3
         vm.prank(admin2);
         distributor.grantRole(DEFAULT_ADMIN_ROLE, admin3);
-        
+
         // Verify all admins have the role
         assertTrue(distributor.hasRole(DEFAULT_ADMIN_ROLE, owner));
         assertTrue(distributor.hasRole(DEFAULT_ADMIN_ROLE, admin2));
         assertTrue(distributor.hasRole(DEFAULT_ADMIN_ROLE, admin3));
-        
+
         // Admin3 can revoke admin2's role
         vm.prank(admin3);
         distributor.revokeRole(DEFAULT_ADMIN_ROLE, admin2);
         assertFalse(distributor.hasRole(DEFAULT_ADMIN_ROLE, admin2));
     }
-} 
+}

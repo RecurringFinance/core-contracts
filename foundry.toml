@@ -4,11 +4,13 @@ src = "src"
 out = "out"
 libs = ["lib"]
 
-
 # Configure remappings
 remappings = [
-  "@std=lib/forge-std/src/",
-  "@openzeppelin=lib/openzeppelin-contracts/",
+  "@openzeppelin=lib/openzeppelin-contracts/"
 ]
+
+[dependencies]
+openzeppelin-contracts = "https://github.com/OpenZeppelin/openzeppelin-contracts"
+
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
