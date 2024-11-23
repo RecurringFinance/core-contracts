@@ -50,8 +50,6 @@ contract Distributor is ReentrancyGuard, AccessControl, IDistributor {
         mapping(address => uint256) beneficiaryToAmount;
         address distributionFeeToken;
         uint256 distributionFeeAmount;
-        uint256 pausedAt;
-        uint256 unPausedAt;
         bool revoked;
     }
 
@@ -161,8 +159,6 @@ contract Distributor is ReentrancyGuard, AccessControl, IDistributor {
         recurringPayment.distributedUpToTime = 0;
         recurringPayment.lastDistributionTime = 0;
         recurringPayment.tokenToDistribute = _tokenToDistribute;
-        recurringPayment.pausedAt = 0;
-        recurringPayment.unPausedAt = 0;
         recurringPayment.revoked = false;
         recurringPayment.distributionFeeToken = _distributionFeeToken;
         recurringPayment.distributionFeeAmount = _distributionFeeAmount;
@@ -199,8 +195,6 @@ contract Distributor is ReentrancyGuard, AccessControl, IDistributor {
 
         recurringPayment.distributedUpToTime = nextDistributionStartTime;
         recurringPayment.lastDistributionTime = block.timestamp;
-        recurringPayment.unPausedAt = 0; // reset the unpaused at time
-        recurringPayment.pausedAt = 0; // reset the paused at time
 
         for (uint256 i = 0; i < EnumerableSet.length(recurringPayment.beneficiaries); i++) {
             IERC20(recurringPayment.tokenToDistribute).safeTransfer(
@@ -219,54 +213,6 @@ contract Distributor is ReentrancyGuard, AccessControl, IDistributor {
         }
 
         emit Distribution(_recurringPaymentId, periods, block.timestamp);
-    }
-
-    /**
-     * @notice Pauses multiple recurring payments
-     * @dev Only callable by contract owner
-     * @param _recurringPaymentIds Array of payment IDs to pause
-     */
-    function pausePayments(uint256[] memory _recurringPaymentIds) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        for (uint256 i = 0; i < _recurringPaymentIds.length; i++) {
-            _pausePayment(_recurringPaymentIds[i]);
-        }
-    }
-
-    /**
-     * @notice Internal function to pause a recurring payment
-     * @param _recurringPaymentId The ID of the recurring payment to pause
-     */
-    function _pausePayment(uint256 _recurringPaymentId) internal onlyValidRecurringPaymentId(_recurringPaymentId) {
-        RecurringPayment storage recurringPayment = recurringPayments[_recurringPaymentId];
-        require(block.timestamp >= recurringPayment.startTime, "Payment has not started yet");
-        require(recurringPayment.pausedAt == 0, "Payment already paused");
-        recurringPayment.pausedAt = block.timestamp;
-        emit PaymentPaused(_recurringPaymentId);
-    }
-
-    /**
-     * @notice Unpauses multiple recurring payments
-     * @dev Only callable by contract owner
-     * @param _recurringPaymentIds Array of payment IDs to unpause
-     */
-    function unpausePayments(uint256[] memory _recurringPaymentIds) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        for (uint256 i = 0; i < _recurringPaymentIds.length; i++) {
-            _unpausePayment(_recurringPaymentIds[i]);
-        }
-    }
-
-    /**
-     * @notice Internal function to unpause a recurring payment
-     * @param _recurringPaymentId The ID of the recurring payment to unpause
-     */
-    function _unpausePayment(uint256 _recurringPaymentId) internal onlyValidRecurringPaymentId(_recurringPaymentId) {
-        RecurringPayment storage recurringPayment = recurringPayments[_recurringPaymentId];
-        require(recurringPayment.pausedAt != 0, "Payment not paused");
-
-        recurringPayment.unPausedAt = block.timestamp;
-        recurringPayment.pausedAt = 0;
-
-        emit PaymentUnpaused(_recurringPaymentId);
     }
 
     /**
@@ -311,9 +257,6 @@ contract Distributor is ReentrancyGuard, AccessControl, IDistributor {
         // even if some periods are pending distribution
         require(!recurringPayment.revoked, "Recurring payment has been revoked");
 
-        // block distribution if the payment is currently paused
-        require(recurringPayment.pausedAt == 0, "Recurring payment is paused");
-
         (uint256 periods, ) = periodsToDistribute(_recurringPaymentId, 1);
         if (periods == 0) {
             // if the payment has an end time and no periods to distribute,
@@ -336,7 +279,7 @@ contract Distributor is ReentrancyGuard, AccessControl, IDistributor {
 
     /**
      * @notice Calculates the number of periods available for distribution
-     * @dev Accounts for paused time and payment schedule
+     * @dev Accounts for payment schedule
      * @param _recurringPaymentId The ID of the recurring payment
      * @return uint256 Number of periods that can be distributed
      */
@@ -362,7 +305,6 @@ contract Distributor is ReentrancyGuard, AccessControl, IDistributor {
 
         if (
             currentTime < recurringPayment.startTime || // payment has not started yet
-            recurringPayment.pausedAt != 0 || // payment is currently paused
             recurringPayment.revoked // payment has been revoked
         ) {
             return (0, recurringPayment.distributedUpToTime);
@@ -371,12 +313,6 @@ contract Distributor is ReentrancyGuard, AccessControl, IDistributor {
         uint256 fromTime = recurringPayment.distributedUpToTime > 0
             ? recurringPayment.distributedUpToTime + DateTime.SECONDS_PER_HOUR // add 1 hour to the last distribution time to avoid distributing tokens for the same period multiple times (in the same hour)
             : recurringPayment.startTime;
-
-        if (fromTime < recurringPayment.unPausedAt) {
-            // if the from time is before the payment was unpaused, use the unpaused at start time instead
-            // as we don't distribute the periods before the payment was unpaused
-            fromTime = recurringPayment.unPausedAt;
-        }
 
         uint256 toTime = recurringPayment.endTime > 0 && currentTime > recurringPayment.endTime
             ? recurringPayment.endTime
@@ -466,8 +402,6 @@ contract Distributor is ReentrancyGuard, AccessControl, IDistributor {
      * @return address The token to distribute
      * @return address[] The beneficiaries
      * @return uint256[] The beneficiaries amounts
-     * @return uint256 The paused at time
-     * @return uint256 The un paused at time
      * @return bool The revoked status
      */
     function getRecurringPayment(
@@ -485,9 +419,7 @@ contract Distributor is ReentrancyGuard, AccessControl, IDistributor {
             address, // 5: tokenToDistribute
             address[] memory, // 6: beneficiaries
             uint256[] memory, // 7: beneficiariesAmounts
-            uint256, // 8: pausedAt
-            uint256, // 9: unPausedAt
-            bool // 10: revoked
+            bool // 8: revoked
         )
     {
         RecurringPayment storage recurringPayment = recurringPayments[_recurringPaymentId];
@@ -509,8 +441,6 @@ contract Distributor is ReentrancyGuard, AccessControl, IDistributor {
             recurringPayment.tokenToDistribute,
             EnumerableSet.values(recurringPayment.beneficiaries),
             beneficiariesAmounts,
-            recurringPayment.pausedAt,
-            recurringPayment.unPausedAt,
             recurringPayment.revoked
         );
     }

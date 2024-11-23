@@ -111,10 +111,6 @@ contract DistributorTest is Test {
             address retrievedTokenToDistribute,
             address[] memory retrievedBeneficiaries,
             uint256[] memory retrievedBeneficiariesAmounts,
-            ,
-            ,
-            // pausedAt
-            // unPausedAt
             bool revoked
         ) = distributor.getRecurringPayment(0);
 
@@ -532,10 +528,6 @@ contract DistributorTest is Test {
             , 
             // beneficiaryToAmount
             ,
-            // pausedAt
-            ,
-            // unPausedAt
-            ,
             // revoked
         ) = distributor.getRecurringPayment(0);
         /* prettier-ignore */
@@ -602,10 +594,6 @@ contract DistributorTest is Test {
             // tokenToDistribute
             ,
             // beneficiaryToAmount
-            ,
-            // pausedAt
-            ,
-            // unPausedAt
             ,
             // revoked
         ) = distributor.getRecurringPayment(0);

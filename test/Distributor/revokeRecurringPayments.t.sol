@@ -85,7 +85,7 @@ contract RevokeRecurringPaymentTest is Test {
 
         distributor.revokeRecurringPayments(paymentIds);
 
-        (, , , , , , , , , , bool revoked) = distributor.getRecurringPayment(0);
+        (, , , , , , , , bool revoked) = distributor.getRecurringPayment(0);
 
         assertTrue(revoked, "Recurring payment should be revoked");
     }
@@ -100,8 +100,8 @@ contract RevokeRecurringPaymentTest is Test {
 
         distributor.revokeRecurringPayments(paymentIds);
 
-        (, , , , , , , , , , bool revokedFirst) = distributor.getRecurringPayment(firstPaymentId);
-        (, , , , , , , , , , bool revokedSecond) = distributor.getRecurringPayment(secondPaymentId);
+        (, , , , , , , , bool revokedFirst) = distributor.getRecurringPayment(firstPaymentId);
+        (, , , , , , , , bool revokedSecond) = distributor.getRecurringPayment(secondPaymentId);
 
         assertTrue(revokedFirst, "First recurring payment should be revoked");
         assertTrue(revokedSecond, "Second recurring payment should be revoked");
@@ -149,7 +149,7 @@ contract RevokeRecurringPaymentTest is Test {
 
         distributor.revokeRecurringPayments(paymentIds);
 
-        (, , , , , , , , , , bool revoked) = distributor.getRecurringPayment(paymentId);
+        (, , , , , , , , bool revoked) = distributor.getRecurringPayment(paymentId);
 
         assertTrue(revoked, "Recurring payment should be marked as revoked");
     }
@@ -178,8 +178,8 @@ contract RevokeRecurringPaymentTest is Test {
 
         distributor.revokeRecurringPayments(paymentIds);
 
-        (, , , , , , , , , , bool revokedFirst) = distributor.getRecurringPayment(firstPaymentId);
-        (, , , , , , , , , , bool revokedSecond) = distributor.getRecurringPayment(secondPaymentId);
+        (, , , , , , , , bool revokedFirst) = distributor.getRecurringPayment(firstPaymentId);
+        (, , , , , , , , bool revokedSecond) = distributor.getRecurringPayment(secondPaymentId);
 
         assertTrue(revokedFirst, "First recurring payment should be revoked");
         assertTrue(revokedSecond, "Second recurring payment should be revoked");

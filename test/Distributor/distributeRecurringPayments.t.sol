@@ -103,7 +103,7 @@ contract DistributeRecurringPaymentsTest is Test {
 
         distributor.distribute(recurringPaymentId, 10);
 
-        (, , , uint256 distributedUpToTime, uint256 lastDistributionTime, , , , , , ) = distributor.getRecurringPayment(
+        (, , , uint256 distributedUpToTime, uint256 lastDistributionTime, , , , ) = distributor.getRecurringPayment(
             recurringPaymentId
         );
         console.log("lastDistributionTime", lastDistributionTime);
@@ -159,7 +159,7 @@ contract DistributeRecurringPaymentsTest is Test {
             100
         );
 
-        (, , , , uint256 lastDistributionTime, , , , , , ) = distributor.getRecurringPayment(recurringPaymentId);
+        (, , , , uint256 lastDistributionTime, , , , ) = distributor.getRecurringPayment(recurringPaymentId);
         console.log("lastDistributionTime", lastDistributionTime);
         console.log("nextDistributionStartTime", nextDistributionStartTime);
         console.log("periodsToDistribute", periodsToDistribute);

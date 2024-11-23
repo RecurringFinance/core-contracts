@@ -22,7 +22,7 @@ contract DistributorAccessControlTest is Test {
         distributor = new Distributor(owner);
     }
 
-    function test_accessControl_initial_admin_role() public {
+    function test_accessControl_initial_admin_role() public view {
         assertTrue(distributor.hasRole(DEFAULT_ADMIN_ROLE, owner));
         assertFalse(distributor.hasRole(DEFAULT_ADMIN_ROLE, nonAdmin));
     }

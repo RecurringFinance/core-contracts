@@ -74,17 +74,17 @@ contract SettersTest is Test {
 
     function test_setEndTime() public {
         uint256 newEndTime = block.timestamp + 7 days;
-        
+
         distributor.setEndTime(0, newEndTime);
 
-        (, uint256 endTime, , , , , , , , , ) = distributor.getRecurringPayment(0);
-        
+        (, uint256 endTime, , , , , , , ) = distributor.getRecurringPayment(0);
+
         assertEq(endTime, newEndTime);
     }
 
     function test_setEndTime_RevertIfNotOwner() public {
         uint256 newEndTime = block.timestamp + 7 days;
-        
+
         vm.prank(address(0xdead));
         vm.expectRevert();
         distributor.setEndTime(0, newEndTime);
@@ -92,14 +92,14 @@ contract SettersTest is Test {
 
     function test_setEndTime_RevertIfBeforeCurrentTime() public {
         uint256 newEndTime = block.timestamp - 1;
-        
+
         vm.expectRevert("New end time must be in the future");
         distributor.setEndTime(0, newEndTime);
     }
 
     function test_setEndTime_RevertIfInvalidDistributionId() public {
         uint256 newEndTime = block.timestamp + 7 days;
-        
+
         vm.expectRevert("Invalid recurring payment id");
         distributor.setEndTime(999, newEndTime);
     }
