@@ -22,7 +22,7 @@ contract CronScheduleTests is Test {
         rewardToken.transfer(address(distributor), 500_000 ether);
     }
 
-    function createBasicPayment(CronLibrary.CronSchedule memory cronSchedule) internal returns (uint256) {
+    function createBasicPayment(CronLibrary.CronSchedule memory cronSchedule) internal {
         address[] memory beneficiaries = new address[](2);
         beneficiaries[0] = address(0x1);
         beneficiaries[1] = address(0x2);
@@ -60,8 +60,6 @@ contract CronScheduleTests is Test {
             rewardTokensArray,
             rewardAmounts
         );
-
-        return distributor.recurringPaymentCounter() - 1;
     }
 
     function test_every_hour() public {
@@ -72,8 +70,8 @@ contract CronScheduleTests is Test {
             daysOfWeek: new uint8[](0)
         });
 
-        uint256 paymentId = createBasicPayment(schedule);
-        (, , CronLibrary.CronSchedule memory savedSchedule, , , , , , ) = distributor.getRecurringPayment(paymentId);
+        createBasicPayment(schedule);
+        (, , CronLibrary.CronSchedule memory savedSchedule, , , , , , ) = distributor.getRecurringPayment(0);
 
         assertEq(savedSchedule.hrs.length, 0);
         assertEq(savedSchedule.daysOfMonth.length, 0);
@@ -94,8 +92,8 @@ contract CronScheduleTests is Test {
             daysOfWeek: new uint8[](0)
         });
 
-        uint256 paymentId = createBasicPayment(schedule);
-        (, , CronLibrary.CronSchedule memory savedSchedule, , , , , , ) = distributor.getRecurringPayment(paymentId);
+        createBasicPayment(schedule);
+        (, , CronLibrary.CronSchedule memory savedSchedule, , , , , , ) = distributor.getRecurringPayment(0);
 
         assertEq(savedSchedule.hrs.length, 3);
         assertEq(savedSchedule.hrs[0], 9);
@@ -118,8 +116,8 @@ contract CronScheduleTests is Test {
             daysOfWeek: new uint8[](0)
         });
 
-        uint256 paymentId = createBasicPayment(schedule);
-        (, , CronLibrary.CronSchedule memory savedSchedule, , , , , , ) = distributor.getRecurringPayment(paymentId);
+        createBasicPayment(schedule);
+        (, , CronLibrary.CronSchedule memory savedSchedule, , , , , , ) = distributor.getRecurringPayment(0);
 
         assertEq(savedSchedule.daysOfMonth.length, 2);
         assertEq(savedSchedule.daysOfMonth[0], 1);
@@ -146,8 +144,8 @@ contract CronScheduleTests is Test {
             daysOfWeek: new uint8[](0)
         });
 
-        uint256 paymentId = createBasicPayment(schedule);
-        (, , CronLibrary.CronSchedule memory savedSchedule, , , , , , ) = distributor.getRecurringPayment(paymentId);
+        createBasicPayment(schedule);
+        (, , CronLibrary.CronSchedule memory savedSchedule, , , , , , ) = distributor.getRecurringPayment(0);
 
         assertEq(savedSchedule.months.length, 3);
         assertEq(savedSchedule.months[0], 3);
@@ -230,8 +228,8 @@ contract CronScheduleTests is Test {
             daysOfWeek: daysOfWeek
         });
 
-        uint256 paymentId = createBasicPayment(schedule);
-        (, , CronLibrary.CronSchedule memory savedSchedule, , , , , , ) = distributor.getRecurringPayment(paymentId);
+        createBasicPayment(schedule);
+        (, , CronLibrary.CronSchedule memory savedSchedule, , , , , , ) = distributor.getRecurringPayment(0);
 
         assertEq(savedSchedule.daysOfWeek.length, 2);
         assertEq(savedSchedule.daysOfWeek[0], 1);
