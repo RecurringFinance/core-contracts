@@ -7,10 +7,11 @@ solc_version = "0.8.24"
 
 # Configure remappings
 remappings = [
-  "@openzeppelin=lib/openzeppelin-contracts/"
+  "@openzeppelin=lib/openzeppelin-contracts/",
+  "@forge-std=lib/forge-std/src"
 ]
 
 [dependencies]
 openzeppelin-contracts = "https://github.com/OpenZeppelin/openzeppelin-contracts"
-
+forge-std = "https://github.com/brockelmore/forge-std"
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
