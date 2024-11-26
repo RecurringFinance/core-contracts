@@ -20,7 +20,7 @@ library CronLibrary {
      */
     function validateCronSchedule(CronSchedule memory schedule) internal pure {
         // Check array lengths aren't excessive
-        require(schedule.hrs.length <= 23, "Too many hour values");
+        require(schedule.hrs.length <= 24, "Too many hour values");
         require(schedule.daysOfMonth.length <= 31, "Too many days of month");
         require(schedule.months.length <= 12, "Too many months");
         require(schedule.daysOfWeek.length <= 7, "Too many days of week");
