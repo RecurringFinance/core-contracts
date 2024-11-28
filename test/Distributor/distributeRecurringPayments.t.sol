@@ -147,6 +147,19 @@ contract DistributeRecurringPaymentsTest is Test {
         distributor.distribute(recurringPaymentId, 10);
     }
 
+    function test_distributeRecurringPayments_should_fail_if_distributed_a_second_time_in_the_same_hour() public {
+        uint256 recurringPaymentId = create_basic_recurring_payment();
+
+        // Move forward 2 days
+        vm.warp(block.timestamp + 2 days);
+
+        // distribute the first period
+        distributor.distribute(recurringPaymentId, 10);
+
+        vm.expectRevert("No periods have passed since last distribution");
+        distributor.distribute(recurringPaymentId, 10);
+    }
+
     function test_distributeRecurringPayments_should_work_even_if_end_time_is_in_the_past() public {
         uint256 recurringPaymentId = create_basic_recurring_payment();
 

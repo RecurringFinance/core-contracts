@@ -323,24 +323,23 @@ contract Distributor is ReentrancyGuard, AccessControl, IDistributor {
         // Start from the last distribution time rounded down to the nearest hour
         // => this is to avoid distributing tokens for the same period multiple times (in the same hour)
         uint256 timestamp = fromTime - (fromTime % DateTime.SECONDS_PER_HOUR);
-
-        CronLibrary.CronSchedule memory cs = recurringPayment.cronSchedule;
-
-        uint256 timeStep = CronLibrary.getMinCronInterval(cs);
+        if (recurringPayment.cronSchedule.hrs.length == 1 && recurringPayment.cronSchedule.hrs[0] == 0) {
+            // if the cron schedule is to distribute at midnight only,
+            // and the timestamp is not already at midnight,
+            // set the timestamp to the next midnight as we will jump 24h per 24h to save on gas
+            uint256 currentHour = DateTime.getHour(timestamp);
+            if (currentHour != 0) {
+                timestamp += ((24 - currentHour) * DateTime.SECONDS_PER_HOUR);
+            }
+        }
+        uint256 timeStep = CronLibrary.getMinCronInterval(recurringPayment.cronSchedule);
 
         while (timestamp <= currentTime && timestamp <= toTime && periodCount < _maxPeriodsToDistribute) {
-            if (CronLibrary.matchesCron(timestamp, cs)) {
+            if (CronLibrary.matchesCron(timestamp, recurringPayment.cronSchedule)) {
                 periodCount++;
             }
             // jump to the next minimum cron schedule time step
-            if (timeStep == 0) {
-                // if the time step is 0, it means that we need to jump month per month
-                // we use the DateTime.addMonths function to do this
-                // this function will make sure to jump to the next month (supports leap years)
-                timestamp = DateTime.addMonths(timestamp, 1);
-            } else {
-                timestamp += timeStep;
-            }
+            timestamp += timeStep;
         }
 
         // return the number of periods and the last distribution time

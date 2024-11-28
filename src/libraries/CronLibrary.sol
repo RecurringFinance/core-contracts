@@ -62,15 +62,14 @@ library CronLibrary {
 
     function getMinCronInterval(CronSchedule memory cronSchedule) internal pure returns (uint256) {
         // Determine the smallest interval specified in the cron schedule
-        if (cronSchedule.hrs.length > 0) {
+        if (cronSchedule.hrs.length != 1 || cronSchedule.hrs[0] != 0) {
+            // if cron schedule hours are not just 0, we need to check every hour
             return 1 hours;
-        } else if (cronSchedule.daysOfMonth.length > 0 || cronSchedule.daysOfWeek.length > 0) {
-            return 1 days;
-        } else if (cronSchedule.months.length > 0) {
-            return 0; // for months, we need to compute the exact number of days
-        } else {
-            return 1 minutes; // All fields are empty (wildcards)
         }
+
+        // cron schedule hours set to 0 only (0 * * *)
+        // we can check every day instead of every hour to save on gas
+        return 1 days;
     }
 
     function matchesCron(uint256 timestamp, CronSchedule memory cronSchedule) internal pure returns (bool) {
@@ -78,7 +77,6 @@ library CronLibrary {
         if (!matchesField(cronSchedule.daysOfMonth, DateTime.getDay(timestamp))) return false;
         if (!matchesField(cronSchedule.months, DateTime.getMonth(timestamp))) return false;
         if (!matchesField(cronSchedule.daysOfWeek, DateTime.getDayOfWeek(timestamp))) return false;
-
         return true;
     }
 
