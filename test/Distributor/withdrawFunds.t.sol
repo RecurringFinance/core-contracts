@@ -42,8 +42,6 @@ contract WithdrawFundsTest is Test {
         address beneficiary = address(0x456);
 
         vm.prank(nonOwner);
-        // TODO: Expect revert with access control error
-        // vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, nonOwner));
         vm.expectRevert();
         distributor.withdrawFunds(address(tokenToDistribute), withdrawAmount, beneficiary);
     }

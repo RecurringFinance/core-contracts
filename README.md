@@ -61,16 +61,18 @@ forge snapshot
 ## Local Development
 
 1. Start local node:
+
 ```bash
 anvil --block-time 1
 ```
 
 2. Deploy contracts locally:
 
-Or manually:
 ```bash
 forge script scripts/deploy_local.s.sol --rpc-url=http://localhost:8545 --broadcast
 ```
+
+> Don't forget to reset your metamask wallet nonce when you restart the node.
 
 ## Deployment
 
