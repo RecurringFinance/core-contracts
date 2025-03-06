@@ -88,14 +88,17 @@ forge create \
 
 ### Contract Verification
 
+
+## Contract Verification for Distributor Factory
 ```bash
-forge verify-contract \
-  $CONTRACT_ADDRESS \
-  Distributor \
-  --chain $CHAIN_NAME \
-  --constructor-args $(cast abi-encode "constructor(address)" "$OWNER_ADDRESS") \
-  --compiler-version v0.8.18
+forge verify-contract CONTRACT_ADDRESS ./src/DistributorFactory.sol:DistributorFactory --verifier-url https://api.basescan.org/api --etherscan-api-key API_KEY --chain CHAIN_NAME --compiler-version v0.8.24 --watch
 ```
+
+## Contract Verification for Distributor
+```bash
+forge verify-contract CONTRACT_ADDRESS ./src/Distributor.sol:Distributor --verifier-url https://api.basescan.org/api --etherscan-api-key API_KEY --chain CHAIN_NAME --compiler-version v0.8.24 --constructor-args $(cast abi-encode "constructor(address)" OWNER_ADDRESS) --watch
+```
+
 
 Required environment variables:
 - `ETH_RPC_URL`: RPC endpoint

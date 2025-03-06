@@ -1,6 +1,6 @@
 pragma solidity ^0.8.20;
 
-import "forge-std/src/Script.sol";
+import "forge-std/Script.sol";
 import {DistributorFactory} from "../src/DistributorFactory.sol";
 
 contract Deploy is Script {
